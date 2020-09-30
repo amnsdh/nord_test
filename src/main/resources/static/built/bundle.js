@@ -77,7 +77,7 @@
 /******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
 /******/
 /******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
+/******/ 	__webpack_require__.p = ".";
 /******/
 /******/
 /******/ 	// Load entry module and return exports
@@ -28611,6 +28611,8 @@ if (false) {} else {
 "use strict";
  // tag::vars[]
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -28653,6 +28655,9 @@ var App = /*#__PURE__*/function (_React$Component) {
     _classCallCheck(this, App);
 
     _this = _super.call(this, props);
+    _this.goToNextWeek = _this.goToNextWeek.bind(_assertThisInitialized(_this));
+    _this.goToPreviousWeek = _this.goToPreviousWeek.bind(_assertThisInitialized(_this));
+    _this.createReservation = _this.createReservation.bind(_assertThisInitialized(_this));
     _this.state = {
       roomId: 1,
       week: 0,
@@ -28664,116 +28669,401 @@ var App = /*#__PURE__*/function (_React$Component) {
   }
 
   _createClass(App, [{
-    key: "componentDidMount",
-    value: function componentDidMount() {
-      // <2>
+    key: "goToNextWeek",
+    value: function goToNextWeek() {
+      this.state.week += 1;
+      this.querySchedule();
+    }
+  }, {
+    key: "goToPreviousWeek",
+    value: function goToPreviousWeek() {
+      this.state.week -= 1;
+      this.querySchedule();
+    }
+  }, {
+    key: "querySchedule",
+    value: function querySchedule() {
       $.get("/reservation", {
-        roomId: state.roomId,
-        week: state.week
-      }).done(function () {
+        roomId: this.state.roomId,
+        week: this.state.week
+      }).done(function (data) {
         this.setState({
           reservationWeek: data.value
         });
-        alert(data);
-      }).fail(function () {
-        alert("error");
-      }).always(function () {
-        alert("finished");
+      }.bind(this)).fail(function () {
+        console.log("error");
       });
+    }
+  }, {
+    key: "createReservation",
+    value: function createReservation(dateFrom, dateTo) {
+      var data = {
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        roomId: this.state.roomId,
+        users: []
+      };
+      $.ajax({
+        type: "POST",
+        url: "/reservation",
+        data: JSON.stringify(data),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (data) {
+          this.querySchedule();
+        }.bind(this),
+        error: function error(err) {
+          alert(err.responseText);
+        }
+      });
+    }
+  }, {
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      // <2>
+      this.querySchedule();
     }
   }, {
     key: "render",
     value: function render() {
       // <3>
-      return /*#__PURE__*/React.createElement(DayList, {
+      return /*#__PURE__*/React.createElement("div", {
+        className: "container schedule"
+      }, /*#__PURE__*/React.createElement(Header, {
+        handlePrevious: this.goToPreviousWeek,
+        handleNext: this.goToNextWeek
+      }), /*#__PURE__*/React.createElement(DayList, {
         reservationWeek: this.state.reservationWeek
-      });
+      }), /*#__PURE__*/React.createElement(ReservationForm, {
+        createReservation: this.createReservation
+      }));
     }
   }]);
 
   return App;
-}(React.Component); // end::app[]
-// tag::employee-list[]
+}(React.Component);
 
+var Header = /*#__PURE__*/function (_React$Component2) {
+  _inherits(Header, _React$Component2);
 
-var DayList = /*#__PURE__*/function (_React$Component2) {
-  _inherits(DayList, _React$Component2);
+  var _super2 = _createSuper(Header);
 
-  var _super2 = _createSuper(DayList);
+  function Header() {
+    _classCallCheck(this, Header);
+
+    return _super2.apply(this, arguments);
+  }
+
+  _createClass(Header, [{
+    key: "render",
+    value: function render() {
+      return /*#__PURE__*/React.createElement("div", {
+        className: "row",
+        style: {
+          display: "flex"
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "col-md-8"
+      }, /*#__PURE__*/React.createElement("h2", {
+        className: "col-md-12"
+      }, "MeetRoom")), /*#__PURE__*/React.createElement("div", {
+        className: "col-md-4",
+        style: {
+          paddingTop: '20px'
+        }
+      }, /*#__PURE__*/React.createElement("button", {
+        onClick: this.props.handlePrevious
+      }, "Previous"), /*#__PURE__*/React.createElement("button", {
+        onClick: this.props.handleNext
+      }, "Next")));
+    }
+  }]);
+
+  return Header;
+}(React.Component);
+
+var DayList = /*#__PURE__*/function (_React$Component3) {
+  _inherits(DayList, _React$Component3);
+
+  var _super3 = _createSuper(DayList);
 
   function DayList() {
     _classCallCheck(this, DayList);
 
-    return _super2.apply(this, arguments);
+    return _super3.apply(this, arguments);
   }
 
   _createClass(DayList, [{
     key: "render",
     value: function render() {
-      var days = this.props.reservationWeek.days.map(function (day) {
-        return /*#__PURE__*/React.createElement(Day, {
+      var daysHeader = this.props.reservationWeek.days.map(function (day) {
+        return /*#__PURE__*/React.createElement(HeaderDay, {
+          key: 'header' + day.dayOfWeek,
           day: day
         });
       });
-      return /*#__PURE__*/React.createElement("table", null, /*#__PURE__*/React.createElement("tbody", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "First Name"), /*#__PURE__*/React.createElement("th", null, "Last Name")), days));
+      var days = this.props.reservationWeek.days.map(function (day) {
+        return /*#__PURE__*/React.createElement(Day, {
+          key: day.dayOfWeek,
+          day: day
+        });
+      });
+      return /*#__PURE__*/React.createElement("div", {
+        className: "row flex-nowrap"
+      }, daysHeader, /*#__PURE__*/React.createElement("hr", null), days);
     }
   }]);
 
   return DayList;
-}(React.Component); // end::employee-list[]
-// tag::employee[]
+}(React.Component);
 
+var HeaderDay = /*#__PURE__*/function (_React$Component4) {
+  _inherits(HeaderDay, _React$Component4);
 
-var Day = /*#__PURE__*/function (_React$Component3) {
-  _inherits(Day, _React$Component3);
+  var _super4 = _createSuper(HeaderDay);
 
-  var _super3 = _createSuper(Day);
+  function HeaderDay() {
+    _classCallCheck(this, HeaderDay);
+
+    return _super4.apply(this, arguments);
+  }
+
+  _createClass(HeaderDay, [{
+    key: "render",
+    value: function render() {
+      var dateString = new Date(this.props.day.date).toLocaleDateString();
+      return /*#__PURE__*/React.createElement("div", {
+        className: "col-md-2 text-center"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "col-md-12"
+      }, this.props.day.dayOfWeek), /*#__PURE__*/React.createElement("div", {
+        className: "col-md-12"
+      }, dateString));
+    }
+  }]);
+
+  return HeaderDay;
+}(React.Component);
+
+var Day = /*#__PURE__*/function (_React$Component5) {
+  _inherits(Day, _React$Component5);
+
+  var _super5 = _createSuper(Day);
 
   function Day() {
     _classCallCheck(this, Day);
 
-    return _super3.apply(this, arguments);
+    return _super5.apply(this, arguments);
   }
 
   _createClass(Day, [{
     key: "render",
     value: function render() {
-      var reservations = this.props.day.reservations(function (reservation) {
+      var reservations = this.props.day.reservations.map(function (reservation) {
         return /*#__PURE__*/React.createElement(Reservation, {
+          key: reservation.id,
           reservation: reservation
         });
       });
-      return /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", null, this.props.day.dayOfWeek), /*#__PURE__*/React.createElement("td", null, this.props.day.date));
+      return /*#__PURE__*/React.createElement("div", {
+        className: "col-md-2 day",
+        style: {
+          height: 600
+        }
+      }, reservations);
     }
   }]);
 
   return Day;
 }(React.Component);
 
-var Reservation = /*#__PURE__*/function (_React$Component4) {
-  _inherits(Reservation, _React$Component4);
+var Reservation = /*#__PURE__*/function (_React$Component6) {
+  _inherits(Reservation, _React$Component6);
 
-  var _super4 = _createSuper(Reservation);
+  var _super6 = _createSuper(Reservation);
 
   function Reservation() {
     _classCallCheck(this, Reservation);
 
-    return _super4.apply(this, arguments);
+    return _super6.apply(this, arguments);
   }
 
   _createClass(Reservation, [{
     key: "render",
     value: function render() {
-      var reservations = this.props.day.reservations(function (reservation) {
-        return /*#__PURE__*/React.createElement(Reservation, {
-          reservation: reservation
+      var dateFrom = new Date(this.props.reservation.dateFrom);
+      var dateTo = new Date(this.props.reservation.dateTo);
+      var msInDay = 24 * 60 * 60 * 1000;
+      var truncDate = new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate(), 0, 0, 0);
+      var msBegin = dateFrom.getTime() - truncDate.getTime();
+      var meetingDuration = dateTo.getTime() - dateFrom.getTime();
+      var reservHeight = 100.0 * meetingDuration / msInDay;
+      var offset = 100.0 * msBegin / msInDay;
+      var users = this.props.reservation.users.map(function (user) {
+        return /*#__PURE__*/React.createElement(User, {
+          key: user.id,
+          user: user
         });
       });
-      return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, this.props.reservation.dateFrom), /*#__PURE__*/React.createElement("span", null, this.props.reservation.dateTo));
+      return /*#__PURE__*/React.createElement("div", {
+        className: "reservation",
+        style: {
+          height: reservHeight + '%',
+          top: offset + '%',
+          color: "#000"
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "text-center"
+      }, this.props.reservation.room.name), /*#__PURE__*/React.createElement("br", null), users);
     }
   }]);
 
   return Reservation;
+}(React.Component);
+
+var User = /*#__PURE__*/function (_React$Component7) {
+  _inherits(User, _React$Component7);
+
+  var _super7 = _createSuper(User);
+
+  function User() {
+    _classCallCheck(this, User);
+
+    return _super7.apply(this, arguments);
+  }
+
+  _createClass(User, [{
+    key: "render",
+    value: function render() {
+      return /*#__PURE__*/React.createElement("span", null, " ", this.props.user.firstName, " ", this.props.user.lastName, " ");
+    }
+  }]);
+
+  return User;
+}(React.Component);
+
+var ReservationForm = /*#__PURE__*/function (_React$Component8) {
+  _inherits(ReservationForm, _React$Component8);
+
+  var _super8 = _createSuper(ReservationForm);
+
+  function ReservationForm(props) {
+    var _this2;
+
+    _classCallCheck(this, ReservationForm);
+
+    _this2 = _super8.call(this, props);
+    _this2.handleInputChange = _this2.handleInputChange.bind(_assertThisInitialized(_this2));
+    _this2.createReservation = _this2.createReservation.bind(_assertThisInitialized(_this2));
+    _this2.state = {};
+    return _this2;
+  }
+
+  _createClass(ReservationForm, [{
+    key: "handleInputChange",
+    value: function handleInputChange(event) {
+      var target = event.target;
+      var value = target.type === 'checkbox' ? target.checked : target.value;
+      var name = target.name;
+      this.setState(_defineProperty({}, name, value));
+    }
+  }, {
+    key: "createReservation",
+    value: function createReservation() {
+      var date = new Date(this.state.date);
+      var time = this.parseTime(this.state.timeStart);
+      var dateFrom = new Date(date.getFullYear(), date.getMonth(), date.getDate(), time.getHours(), time.getMinutes(), 0);
+      var dateTo = new Date(dateFrom.getTime() + this.state.duration * 60 * 1000);
+      this.props.createReservation(dateFrom, dateTo);
+    }
+  }, {
+    key: "parseTime",
+    value: function parseTime(t) {
+      var d = new Date();
+      var time = t.match(/(\d+)(?::(\d\d))?\s*(p?)/);
+      d.setHours(parseInt(time[1]) + (time[3] ? 12 : 0));
+      d.setMinutes(parseInt(time[2]) || 0);
+      return d;
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      return /*#__PURE__*/React.createElement("div", {
+        className: "col-md-6"
+      }, /*#__PURE__*/React.createElement("form", null, /*#__PURE__*/React.createElement("div", {
+        className: "form-group"
+      }, /*#__PURE__*/React.createElement("label", {
+        "for": "date"
+      }, "Meeting date"), /*#__PURE__*/React.createElement("input", {
+        name: "date",
+        value: this.state.date,
+        onChange: this.handleInputChange,
+        type: "date",
+        className: "form-control",
+        id: "date",
+        placeholder: "Meeting date"
+      })), /*#__PURE__*/React.createElement("div", {
+        className: "form-group"
+      }, /*#__PURE__*/React.createElement("label", {
+        "for": "timeStart"
+      }, "Meeting starts at"), /*#__PURE__*/React.createElement("input", {
+        name: "timeStart",
+        value: this.state.timeStart,
+        onChange: this.handleInputChange,
+        type: "time",
+        className: "form-control",
+        id: "timeStart",
+        placeholder: "Password"
+      })), /*#__PURE__*/React.createElement("div", {
+        className: "form-group form-check"
+      }, /*#__PURE__*/React.createElement("label", {
+        "for": "duration"
+      }, "Duration, minutes"), /*#__PURE__*/React.createElement("input", {
+        name: "duration",
+        value: this.state.duration,
+        onChange: this.handleInputChange,
+        type: "number",
+        className: "form-control",
+        id: "duration"
+      })), /*#__PURE__*/React.createElement("button", {
+        type: "button",
+        onClick: this.createReservation,
+        className: "btn btn-primary"
+      }, "Create reservation")));
+    }
+  }]);
+
+  return ReservationForm;
+}(React.Component);
+
+var TimeLine = /*#__PURE__*/function (_React$Component9) {
+  _inherits(TimeLine, _React$Component9);
+
+  var _super9 = _createSuper(TimeLine);
+
+  function TimeLine() {
+    _classCallCheck(this, TimeLine);
+
+    return _super9.apply(this, arguments);
+  }
+
+  _createClass(TimeLine, [{
+    key: "render",
+    value: function render() {
+      var indents = [];
+
+      for (var i = 0; i < 24; i++) {
+        indents.push( /*#__PURE__*/React.createElement("span", {
+          className: "indent",
+          key: i
+        }, i));
+      }
+
+      return indents;
+    }
+  }]);
+
+  return TimeLine;
 }(React.Component); // end::employee[]
 // tag::render[]
 

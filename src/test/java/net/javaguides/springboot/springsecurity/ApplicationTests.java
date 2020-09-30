@@ -1,4 +1,4 @@
-package net.javaguides.springboot.springsecurity;
+package net.meet.room;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
