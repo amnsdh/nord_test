@@ -47,6 +47,9 @@ public class ReservationController {
 
     @PostMapping
     public ResponseEntity Create(@RequestBody RoomReservationDto model, @AuthenticationPrincipal UserDetails userDetails) {
+        if (model.getDateFrom() == null || model.getDateTo() == null)
+            return ResponseEntity.badRequest().body("Date range is not valid");
+
         if (model != null && userDetails != null) {
             User user = userService.findByEmail(userDetails.getUsername());
             model.addUser(user.getId());
