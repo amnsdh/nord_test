@@ -1,6 +1,7 @@
 package net.meet.room.web.dto;
 
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 import java.time.ZonedDateTime;
 import java.util.Date;
@@ -9,13 +10,13 @@ import java.util.List;
 
 public class RoomReservationDto {
 
-    @NotEmpty
+    @NotNull
     private Long roomId;
 
-    @NotEmpty
+    @NotNull
     private ZonedDateTime dateFrom;
 
-    @NotEmpty
+    @NotNull
     private ZonedDateTime dateTo;
 
     private List<Long> users;

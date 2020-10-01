@@ -18,13 +18,17 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import net.meet.room.model.User;
 import net.meet.room.service.UserService;
 import net.meet.room.web.dto.UserRegistrationDto;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/reservation")
@@ -46,7 +50,7 @@ public class ReservationController {
     }
 
     @PostMapping
-    public ResponseEntity Create(@RequestBody RoomReservationDto model, @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity Create(@Valid @RequestBody RoomReservationDto model, @AuthenticationPrincipal UserDetails userDetails) {
         if (model.getDateFrom() == null || model.getDateTo() == null)
             return ResponseEntity.badRequest().body("Date range is not valid");
 
@@ -66,5 +70,18 @@ public class ReservationController {
     @DeleteMapping
     public Result<Boolean> Delete(Long id) {
         return reservService.deleteReservation(id);
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Map<String, String> handleValidationExceptions(
+            MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return errors;
     }
 }
