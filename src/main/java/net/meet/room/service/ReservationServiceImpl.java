@@ -14,8 +14,8 @@ import java.time.DayOfWeek;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ReservationServiceImpl implements ReservationService {
@@ -34,33 +34,41 @@ public class ReservationServiceImpl implements ReservationService {
                 reservation.getDateTo(),
                 reservation.getRoomId()).size() > 0)
         {
-            return new Result<Reservation>(null, true, "Reservations can't intersect by time");
+            return new Result<>(null, true, "Reservations can't intersect by time");
         }
         Reservation res = new Reservation();
         res.setDateFrom(reservation.getDateFrom());
         res.setDateTo(reservation.getDateTo());
-        Room room = roomRepository.getOne(reservation.getRoomId());
-        if (room == null)
-            return null;
-        res.setRoom(room);
+        Optional<Room> room = roomRepository.findById(reservation.getRoomId());
+        if (!room.isPresent())
+            return new Result<>(null, true, "There is no room with id:" + reservation.getRoomId() +
+                    ". Asc administrator to create the room");
+        res.setRoom(room.get());
         for (Long id : reservation.getUsers())
         {
-            User user = userRepository.getOne(id);
-            if (user == null)
+            Optional<User> user = userRepository.findById(id);
+            if (!user.isPresent())
                 return null;
-            res.addUser(user);
+            res.addUser(user.get());
         }
-        return new Result(reservRespository.save(res));
+        Reservation result;
+        try {
+            result = reservRespository.save(res);
+        }
+        catch (Exception e) {
+            return new Result<>(null, true, e.getMessage());
+        }
+        return new Result<>(result);
     }
 
     @Override
     public Result<Boolean> deleteReservation(Long id) {
-        Reservation reserv = reservRespository.getOne(id);
-        if (reserv == null) {
-            return new Result<Boolean>(false, true, "There is no reservation with id " + id);
+        Optional<Reservation> reserv = reservRespository.findById(id);
+        if (!reserv.isPresent()) {
+            return new Result<>(false, true, "There is no reservation with id " + id);
         }
-        reservRespository.delete(reserv);
-        return new Result(true);
+        reservRespository.delete(reserv.get());
+        return new Result<>(true);
     }
 
     @Override
@@ -68,6 +76,6 @@ public class ReservationServiceImpl implements ReservationService {
         final ZonedDateTime input = ZonedDateTime.now(ZoneId.systemDefault()).truncatedTo(ChronoUnit.DAYS);
         final ZonedDateTime startOfWeek = input.plusWeeks(week).with(DayOfWeek.MONDAY);
         final ZonedDateTime endOfWeek = startOfWeek.plusDays(6);
-        return new Result(reservRespository.getByRange(startOfWeek, endOfWeek, roomId));
+        return new Result<>(reservRespository.getByRange(startOfWeek, endOfWeek, roomId));
     }
 }

@@ -61,7 +61,7 @@ public class ReservationController {
         Result<Reservation> reservation = reservService.createReservation(model);
         if (reservation.hasError)
         {
-            ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(reservation.errorString);
         }
         return new ResponseEntity(reservation.value, HttpStatus.OK);
